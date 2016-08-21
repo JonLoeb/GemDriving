@@ -27,7 +27,9 @@ public class AllDataGemController : MonoBehaviour
 
         //To get gem by number instead of address, on Android the Gem should be paired to Gem SDK Utility app
         //gem = GemManager.Instance.GetGem(0);
-        gem = GemManager.Instance.GetGem("D0:B5:C2:90:7E:64");
+        //gem = GemManager.Instance.GetGem("D0:B5:C2:90:7E:64");
+        gem = GemManager.Instance.GetGem("5C:F8:21:9C:FF:C4");
+
 
         //Enable extra features
         if (gem != null)
@@ -59,8 +61,9 @@ public class AllDataGemController : MonoBehaviour
 
             Quaternion q = Quaternion.LookRotation(Vector3.right, Vector3.back);
 
+            transform.rotation = gem.Rotation;
             //transform.rotation = q * gem.Rotation;
-            transform.rotation = q * gem.Rotation * Quaternion.Inverse(q);
+            //transform.rotation = q * gem.Rotation * Quaternion.Inverse(q);
 
             StateText.text = gem.State.ToString();
             RotationText.text = gem.Rotation.ToString();

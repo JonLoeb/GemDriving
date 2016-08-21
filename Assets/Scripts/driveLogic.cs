@@ -10,14 +10,14 @@ public class driveLogic : MonoBehaviour {
 
 	//Magic constants
 	float steeringRatio = 12f;	//amount of times faster steering wheel turns to carfront wheels
-	float minTurningRad = 10f; //higher number means the wheel is less sensative
-	float maxSteeringWheelAngleDeg = 450f;//wheel can physically turn by +- this amount in degrees
+	float minTurningRad = 25f; //higher number means the wheel is less sensative
+	float maxSteeringWheelAngleDeg = 100f;//wheel can physically turn by +- this amount in degrees
 	float maxCarSpeed = 1.8f;
 	float noPedalSpeed = 0.005f;
-	float dragCoeff = 0.01f;
-	float maxGasAcc = 0.1f;
-	float maxBreakPedalAngleDeg = 80f;
-	float maxGasPedalAngleDeg = 80f;
+	float dragCoeff = 0.0001f;
+	float maxGasAcc = 0.04f;
+	float maxBreakPedalAngleDeg = 18f;
+	float maxGasPedalAngleDeg = 21f;
 
 
 	//Unity Gameobjects
@@ -31,6 +31,10 @@ public class driveLogic : MonoBehaviour {
 	public Transform[] frontWheels = new Transform[2];
 	public GameObject firstPerson;
 	public GameObject thirdPerson;
+	public Transform thirdPersonCameraModel;
+	public Transform thirdPersonCarBody;
+	public Transform carCircleModel;
+
 
 	//Values to keep between FixedUpdate
 	IGem steeringWheelGem;
@@ -45,13 +49,21 @@ public class driveLogic : MonoBehaviour {
 	IGem breakPedalGem;
 	Quaternion currentBreakPedalGemRotation = Quaternion.identity;
 	Quaternion inverseStartBreakPedalGemRotation = Quaternion.identity;
+	Quaternion thirdPersonCameraStartRotation;
+	Vector3 thirdPersonCameraStartPosition;
+	Quaternion carBodyStartRotation;
+
 
 	void Start () {
 		GemManager.Instance.Connect();
 		steeringWheelGem = GemManager.Instance.GetGem("5C:F8:21:9C:FF:C4");
 		gasPedalGem =  GemManager.Instance.GetGem("D0:B5:C2:90:7E:65");
-		breakPedalGem =  GemManager.Instance.GetGem("D0:B5:C2:90:7E:4B");
+		breakPedalGem =  GemManager.Instance.GetGem("D0:B5:C2:90:7E:61");
 
+		thirdPersonCameraStartRotation = thirdPersonCameraModel.localRotation;
+		thirdPersonCameraStartPosition = thirdPersonCameraModel.localPosition;
+
+		carBodyStartRotation = thirdPersonCarBody.localRotation;
 	}
 
 	void FixedUpdate () {
@@ -77,31 +89,39 @@ public class driveLogic : MonoBehaviour {
 		updateSteeringWheelAngle();
 
 		animateCarParts();
+		gameObject.GetComponent<AudioSource>().volume = carSpeed / maxCarSpeed;
 
 
 		if(steeringWheelGem.State == GemState.Connected && gasPedalGem.State == GemState.Connected && breakPedalGem.State == GemState.Connected){
 			carSpeed = getCarSpeed();
+			//carSpeed = getCarSpeedNEW();
+
 			float turningRad = getTurningRad();
+			updateCircleModel(turningRad);
 			updateCarPos(turningRad);
 			updateCarRot(turningRad);
 		}
 	}
 
-	float getCarSpeed(){
-		//TOFIX
-			//Make sure I implemented acceloration correctly so that the car feels real
-			//Make acceloration less when car speed is high (0 - 60) time < (60 - 120) time
+	void updateCircleModel(float turningRad){
+		if(turningRad > 100000000000f){
+			carCircleModel.localScale = new Vector3(0.03f, 0.03f, 0.03f);
+			return;
+		}
+		carCircleModel.localScale = new Vector3(2f * turningRad, 0.03f, 2f * turningRad);
+		carCircleModel.localPosition = new Vector3(turningRad, 0f, 0f);
+	}
 
-		//float angle = Quaternion.Angle(Quaternion.identity, currentGasPedalGemRotation);
-		//return noPedalSpeed + ((angle/180f) * (maxCarSpeed - noPedalSpeed));
+	float getCarSpeed(){
 
 		float newCarSpeed = carSpeed;
+		float speedRatio;
 
 		//gas
 		if(newCarSpeed < maxCarSpeed){
 			float gasAngle = Quaternion.Angle(Quaternion.identity, currentGasPedalGemRotation);
-			float speedRatio = newCarSpeed / maxCarSpeed;
-			newCarSpeed += (gasAngle / maxGasPedalAngleDeg) * (1f - speedRatio) * maxGasAcc;
+			speedRatio = newCarSpeed / maxCarSpeed;
+			newCarSpeed += (gasAngle / maxGasPedalAngleDeg) * Mathf.Pow((1f - speedRatio), 2f) * maxGasAcc;
 		}
 
 		//drag - this slowly damps the speed to approach the nePedalSpeed
@@ -109,7 +129,11 @@ public class driveLogic : MonoBehaviour {
 
 		//break
 		float breakAngle = Quaternion.Angle(Quaternion.identity, currentBreakPedalGemRotation);
-		newCarSpeed -= (breakAngle / maxBreakPedalAngleDeg) * newCarSpeed;
+		//newCarSpeed -= (breakAngle / maxBreakPedalAngleDeg) * newCarSpeed;
+
+		speedRatio = newCarSpeed / maxCarSpeed;
+		newCarSpeed -= (breakAngle / maxBreakPedalAngleDeg) * Mathf.Pow((1f - speedRatio), 2f) * newCarSpeed;
+
 
 
 		//edge cases
@@ -122,15 +146,65 @@ public class driveLogic : MonoBehaviour {
 		return newCarSpeed;
 	}
 
+	float getCarSpeedNEW(){
+		float acceloration;
+
+		//gas
+		float gasAngle = Quaternion.Angle(Quaternion.identity, currentGasPedalGemRotation);
+		acceloration = (gasAngle / maxGasPedalAngleDeg) * maxGasAcc;
+
+		//drag
+		acceloration -= dragCoeff * Mathf.Pow(carSpeed, 3f);
+
+		//break
+		float breakAngle = Quaternion.Angle(Quaternion.identity, currentBreakPedalGemRotation);
+		acceloration -= (breakAngle / maxBreakPedalAngleDeg) * carSpeed;//TOFIX make a break constant
+
+		float impulse = acceloration;// * Time.deltaTime;
+
+		//Edge Cases
+		if (carSpeed + impulse < 0){
+			return 0;
+		}
+		if (carSpeed + impulse > maxCarSpeed){
+			return maxCarSpeed;
+		}
+		return carSpeed + impulse;
+	}
+
 	void rotateFrontCarWheelsModel(){
 		float wheelsAngleDeg = steeringWheelAngleDeg / steeringRatio;
 		frontWheels[0].transform.localRotation = Quaternion.AngleAxis(wheelsAngleDeg, Vector3.up);
 		frontWheels[1].transform.localRotation = Quaternion.AngleAxis(wheelsAngleDeg, Vector3.up);
 	}
 
+	void animateThirdPersonCamera(){
+		Quaternion q = thirdPersonCameraStartRotation * Quaternion.Inverse(transform.rotation);
+		float steeringWheelTurnedRatio = Mathf.Abs(steeringWheelAngleDeg / maxSteeringWheelAngleDeg);
+
+		Quaternion newRotation = Quaternion.Slerp(thirdPersonCameraStartRotation, q , 0.5f * steeringWheelTurnedRatio );
+
+		Quaternion newPosQ =  Quaternion.Inverse(thirdPersonCameraStartRotation) * Quaternion.Slerp(thirdPersonCameraStartRotation, q , 0.4f * steeringWheelTurnedRatio );
+
+		thirdPersonCameraModel.localPosition = newPosQ * thirdPersonCameraStartPosition;
+		thirdPersonCameraModel.localRotation = newRotation;
+	}
+
+	void animateThirdPersonCarBody(){
+		Quaternion q = carBodyStartRotation * transform.rotation;
+		float steeringWheelTurnedRatio = Mathf.Abs(steeringWheelAngleDeg / maxSteeringWheelAngleDeg);
+
+		Quaternion newRotation = Quaternion.Slerp(carBodyStartRotation, q , steeringWheelTurnedRatio );
+
+		thirdPersonCarBody.localRotation = newRotation;
+	}
+
 	void animateCarParts(){
 		if(thirdPerson.active){
 			rotateFrontCarWheelsModel();
+			//animateThirdPersonCamera();
+			//animateThirdPersonCarBody();
+
 		}
 		else if (firstPerson.active){
 			rotateSteeringWheelModel();
@@ -152,6 +226,9 @@ public class driveLogic : MonoBehaviour {
 			turningRad = -turningRad;
 		}
 
+		//float travelDistance = carSpeed / Time.deltaTime;//TOFIX if causes bugs
+		//float arcAngle = travelDistance / turningRad;
+
 		float arcAngle = carSpeed / turningRad;
 
 		float newX = circleSign * (turningRad * (1 - Mathf.Cos(arcAngle)));
@@ -161,6 +238,9 @@ public class driveLogic : MonoBehaviour {
 	}
 
 	void updateCarRot(float turningRad){
+		//float travelDistance = carSpeed / Time.deltaTime;//TOFIX if causes bugs
+		//float arcAngleDeg = (travelDistance / turningRad) * Mathf.Rad2Deg;
+
 		float arcAngleDeg = (carSpeed / turningRad) * Mathf.Rad2Deg;
 		transform.rotation = transform.rotation *  Quaternion.AngleAxis(arcAngleDeg, Vector3.up);
 	}
@@ -170,6 +250,9 @@ public class driveLogic : MonoBehaviour {
 		Vector3 currentSteeringWheelDirection = currentSteeringWheelGemRotation * Vector3.forward;
 
 		steeringWheelAngleDeg += AngleSigned(prevSteeringWheelDirection, currentSteeringWheelDirection, prevSteeringWheelGemRotation * Vector3.up);
+
+		//Should also work but would break if wheel doesnt rotate orthoronally to Vector3.up
+		//steeringWheelAngleDeg += AngleSigned(prevSteeringWheelDirection, currentSteeringWheelDirection, Vector3.up);
 	}
 
 	float getTurningRad(){
@@ -213,6 +296,8 @@ public class driveLogic : MonoBehaviour {
 
 		gasPedalGemStateTxt.text = "Gas: " + gasPedalGem.State;
 		gasPedalStateImg.transform.rotation = currentGasPedalGemRotation;
+
+
 
 		breakPedalGemStateTxt.text = "Break: " + breakPedalGem.State;
 		breakPedalStateImg.transform.rotation = currentBreakPedalGemRotation;

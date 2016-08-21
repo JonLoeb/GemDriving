@@ -10,14 +10,14 @@ public class sphereDriveLogic : MonoBehaviour {
 
 	//Magic constants
 	float steeringRatio = 12f;	//amount of times faster steering wheel turns to carfront wheels
-	float minTurningRad = 10f; //higher number means the wheel is less sensative
-	float maxSteeringWheelAngleDeg = 450f;//wheel can physically turn by +- this amount in degrees
+	float minTurningRad = 25f; //higher number means the wheel is less sensative
+	float maxSteeringWheelAngleDeg = 100f;//wheel can physically turn by +- this amount in degrees
 	float maxCarSpeed = 1.8f;
 	float noPedalSpeed = 0.005f;
-	float dragCoeff = 0.01f;
+	float dragCoeff = 0.0001f;
 	float maxGasAcc = 0.04f;
-	float maxBreakPedalAngleDeg = 80f;
-	float maxGasPedalAngleDeg = 80f;
+	float maxBreakPedalAngleDeg = 18f;
+	float maxGasPedalAngleDeg = 21f;
 	float earthRad = 51f;
 
 
@@ -94,13 +94,12 @@ public class sphereDriveLogic : MonoBehaviour {
 
 
 		if(steeringWheelGem.State == GemState.Connected && gasPedalGem.State == GemState.Connected && breakPedalGem.State == GemState.Connected){
-			//carSpeed = getCarSpeed();
-			carSpeed = getCarSpeedNEW();
+			carSpeed = getCarSpeed();
+			//carSpeed = getCarSpeedNEW();
 
 			float turningRad = getTurningRad();
 			//updateCircleModel(turningRad);
 			updateCarPos(turningRad);
-			//updateCarRot(turningRad);
 		}
 	}
 
@@ -138,31 +137,7 @@ public class sphereDriveLogic : MonoBehaviour {
 		return newCarSpeed;
 	}
 
-	float getCarSpeedNEW(){
-		float acceloration;
 
-		//gas
-		float gasAngle = Quaternion.Angle(Quaternion.identity, currentGasPedalGemRotation);
-		acceloration = (gasAngle / maxGasPedalAngleDeg) * maxGasAcc;
-
-		//drag
-		acceloration -= dragCoeff * Mathf.Pow(carSpeed, 3f);
-
-		//break
-		float breakAngle = Quaternion.Angle(Quaternion.identity, currentBreakPedalGemRotation);
-		acceloration -= (breakAngle / maxBreakPedalAngleDeg) * carSpeed;//TOFIX make a break constant
-
-		float impulse = acceloration;// * Time.deltaTime;
-
-		//Edge Cases
-		if (carSpeed + impulse < 0){
-			return 0;
-		}
-		if (carSpeed + impulse > maxCarSpeed){
-			return maxCarSpeed;
-		}
-		return carSpeed + impulse;
-	}
 
 	void rotateFrontCarWheelsModel(){
 		float wheelsAngleDeg = steeringWheelAngleDeg / steeringRatio;
@@ -226,8 +201,29 @@ public class sphereDriveLogic : MonoBehaviour {
 		//transform.position = transform.position + (transform.rotation * new Vector3(newX, 0f, newZ));
 		//transform.rotation = transform.rotation *  Quaternion.AngleAxis(arcAngleDeg, Vector3.up);
 
-
+		//rotate first method
 		if (true){
+			transform.rotation = transform.rotation *  Quaternion.AngleAxis(arcAngleDeg, Vector3.up);
+
+			Vector3 flatDirection =  new Vector3(newX, newY, newZ);
+			arcAngle = flatDirection.magnitude / earthRad;
+			newY = -1f *  (earthRad * (1 - Mathf.Cos(arcAngle)));
+			float newFlatDirection = earthRad * Mathf.Sin(arcAngle);
+			flatDirection.Normalize();
+
+			Vector3 newDirection = (newFlatDirection * flatDirection) + new Vector3(0f, newY, 0f);
+			transform.position = transform.position + (transform.rotation * newDirection);
+
+			transform.rotation = transform.rotation *  Quaternion.AngleAxis(arcAngle * Mathf.Rad2Deg, Vector3.right);
+
+
+
+
+		}
+
+
+		//new direction vector method
+		if (false){
 			Vector3 flatDirection =  new Vector3(newX, newY, newZ);
 			arcAngle = flatDirection.magnitude / earthRad;
 			newY = -1f *  (earthRad * (1 - Mathf.Cos(arcAngle)));
@@ -247,11 +243,9 @@ public class sphereDriveLogic : MonoBehaviour {
 
 			//transform.position = transform.position + (transform.rotation * new Vector3(0f, newY, 0f));
 			//transform.rotation = transform.rotation *  Quaternion.AngleAxis(arcAngle * Mathf.Rad2Deg, transform.rotation * flatDirection);
-
-
 		}
 
-
+		//two direction method
 		if (false){
 			//outwards component
 			arcAngle = newZ / earthRad;

@@ -18,7 +18,7 @@ public class sphereDriveLogic : MonoBehaviour {
 	float maxGasAcc = 0.04f;
 	float maxBreakPedalAngleDeg = 18f;
 	float maxGasPedalAngleDeg = 21f;
-	float earthRad = 51f;
+	float earthRad = 101f;
 
 
 	//Unity Gameobjects
@@ -197,78 +197,18 @@ public class sphereDriveLogic : MonoBehaviour {
 		float arcAngle = carSpeed / turningRad;
 		float newX = circleSign * (turningRad * (1 - Mathf.Cos(arcAngle)));
 		float newZ = turningRad * Mathf.Sin(arcAngle);
-		float newY = 0f;
-		//transform.position = transform.position + (transform.rotation * new Vector3(newX, 0f, newZ));
-		//transform.rotation = transform.rotation *  Quaternion.AngleAxis(arcAngleDeg, Vector3.up);
 
-		//rotate first method
-		if (true){
-			transform.rotation = transform.rotation *  Quaternion.AngleAxis(arcAngleDeg, Vector3.up);
+		Vector3 moveDirection =  new Vector3(newX, 0f, newZ);
+		arcAngle = moveDirection.magnitude / earthRad;
 
-			Vector3 flatDirection =  new Vector3(newX, newY, newZ);
-			arcAngle = flatDirection.magnitude / earthRad;
-			newY = -1f *  (earthRad * (1 - Mathf.Cos(arcAngle)));
-			float newFlatDirection = earthRad * Mathf.Sin(arcAngle);
-			flatDirection.Normalize();
+		float newY = -1f *  (earthRad * (1 - Mathf.Cos(arcAngle)));
+		float moveMagnitude = (earthRad * Mathf.Sin(arcAngle)) / moveDirection.magnitude;
 
-			Vector3 newDirection = (newFlatDirection * flatDirection) + new Vector3(0f, newY, 0f);
-			transform.position = transform.position + (transform.rotation * newDirection);
+		moveDirection = (moveMagnitude * moveDirection) + new Vector3(0f, newY, 0f);
 
-			transform.rotation = transform.rotation *  Quaternion.AngleAxis(arcAngle * Mathf.Rad2Deg, Vector3.right);
-
-
-
-
-		}
-
-
-		//new direction vector method
-		if (false){
-			Vector3 flatDirection =  new Vector3(newX, newY, newZ);
-			arcAngle = flatDirection.magnitude / earthRad;
-			newY = -1f *  (earthRad * (1 - Mathf.Cos(arcAngle)));
-			float newFlatDirection = earthRad * Mathf.Sin(arcAngle);
-			flatDirection.Normalize();
-
-			Vector3 newDirection = (newFlatDirection * flatDirection) + new Vector3(0f, newY, 0f);
-
-
-			transform.position = transform.position + (transform.rotation * newDirection);
-			transform.rotation = transform.rotation *  Quaternion.AngleAxis(arcAngle * Mathf.Rad2Deg, transform.rotation * flatDirection);
-			transform.rotation = transform.rotation *  Quaternion.AngleAxis(arcAngleDeg, transform.rotation * Vector3.up);
-
-
-			//transform.position = transform.position + (transform.rotation * (newFlatDirection * flatDirection));
-			//transform.rotation = transform.rotation *  Quaternion.AngleAxis(arcAngleDeg, transform.rotation * Vector3.up);
-
-			//transform.position = transform.position + (transform.rotation * new Vector3(0f, newY, 0f));
-			//transform.rotation = transform.rotation *  Quaternion.AngleAxis(arcAngle * Mathf.Rad2Deg, transform.rotation * flatDirection);
-		}
-
-		//two direction method
-		if (false){
-			//outwards component
-			arcAngle = newZ / earthRad;
-			newY = -1f *  (earthRad * (1 - Mathf.Cos(arcAngle)));
-			newZ = earthRad * Mathf.Sin(arcAngle);
-			transform.position = transform.position + (transform.rotation * new Vector3(0f, newY, newZ));
-			transform.rotation = transform.rotation *  Quaternion.AngleAxis(arcAngle * Mathf.Rad2Deg, transform.rotation * Vector3.right);
-
-			//horizontal component
-			arcAngle = newX / earthRad;
-			newY = -1f *  (earthRad * (1 - Mathf.Cos(arcAngle)));
-			newX = earthRad * Mathf.Sin(arcAngle);
-			transform.position = transform.position + (transform.rotation * new Vector3(newX, newY, 0f));
-			transform.rotation = transform.rotation *  Quaternion.AngleAxis(arcAngle * Mathf.Rad2Deg, transform.rotation * Vector3.back);
-
-			//transform.rotation = transform.rotation *  Quaternion.AngleAxis(arcAngle * Mathf.Rad2Deg,  transform.rotation * Vector3.up);
-		}
-
-
-
-		//Try to fix problems
-	//newY = Mathf.Sqrt(Mathf.Pow(earthRad, 2F) - Mathf.Pow(transform.position.x, 2F) - Mathf.Pow(transform.position.z, 2F));
-	//transform.position = new Vector3(transform.position.x, transform.position.y, newZ);
+		transform.rotation = transform.rotation *  Quaternion.AngleAxis(arcAngleDeg, Vector3.up);
+		transform.position = transform.position + (transform.rotation * moveDirection);
+		transform.rotation = transform.rotation *  Quaternion.AngleAxis(arcAngle * Mathf.Rad2Deg, Vector3.right);
 
 	}
 
@@ -296,9 +236,9 @@ public class sphereDriveLogic : MonoBehaviour {
 
 
 	void toggleCameraView(){
-    thirdPerson.SetActive(!thirdPerson.active);
-    firstPerson.SetActive(!firstPerson.active);
-  }
+		thirdPerson.SetActive(!thirdPerson.active);
+		firstPerson.SetActive(!firstPerson.active);
+	}
 
 	void resetAll(){
 		calibrateGems();

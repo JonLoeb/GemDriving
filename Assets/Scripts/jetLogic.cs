@@ -10,7 +10,7 @@ public class jetLogic : MonoBehaviour{
   int highScore = 0;
   int currentScore = 0;
 
-  public float carSpeed = 0.10f;
+  public float jetSpeed = 0.10f;
   Quaternion wheelRotation = Quaternion.identity;
 
   private bool safetyBubbleIsOn = false;
@@ -21,7 +21,7 @@ public class jetLogic : MonoBehaviour{
   private IGem wheelGem;
 
   public Transform steeringWheel;
-  public Transform carBody;
+  public Transform jetBody;
   public Transform camera;
   public GameObject protectionBubble;
 
@@ -31,6 +31,8 @@ public class jetLogic : MonoBehaviour{
 
   private Quaternion inverseStartRotationWheel = Quaternion.identity;
 
+
+  //all shapes are in the cube array (cubes, cones, spheres....)
   public GameObject[] cube;
 
   // Use this for initialization
@@ -47,7 +49,7 @@ public class jetLogic : MonoBehaviour{
     // gem[0] =  GemManager.Instance.GetGem("D0:B5:C2:90:78:E4");//red
     // gem[4] =  GemManager.Instance.GetGem("D0:B5:C2:90:7C:4D");//blue
     // gem[5] =  GemManager.Instance.GetGem("98:7B:F3:5A:5C:6D");//yellow
-    wheelGem = GemManager.Instance.GetGem("D0:B5:C2:90:7E:64");
+    wheelGem = GemManager.Instance.GetGem("5C:F8:21:9C:FF:C4");
 
 
   }
@@ -75,7 +77,7 @@ public class jetLogic : MonoBehaviour{
 
       //rotateWheel();
 
-      moveCar();
+      movejet();
 
 
     }
@@ -104,12 +106,12 @@ public class jetLogic : MonoBehaviour{
       if(miniPower){
         float miniSize = 0.4f;
         scale  = miniSize + ((counter / 500f) * (1f - miniSize));
-        carBody.transform.localScale = new Vector3(scale, scale, scale);
+        jetBody.transform.localScale = new Vector3(scale, scale, scale);
       }
       else if(maxiPower){
         float maxiSize = 1.3f;
         scale  = maxiSize - ((counter / 500f) * (maxiSize - 1f));
-        carBody.transform.localScale = new Vector3(scale, scale, scale);
+        jetBody.transform.localScale = new Vector3(scale, scale, scale);
       }
       if(safetyBubbleIsOn){
         scale  = 2.6f - ((counter / 500f) * 2.6f);
@@ -129,8 +131,8 @@ public class jetLogic : MonoBehaviour{
     currentScore = 0;
     superPower.text = "Mode: Normal";
     counter = 0f;
-    carSpeed = 0.10f;
-    carBody.transform.localScale = new Vector3(1f, 1f, 1f);
+    jetSpeed = 0.10f;
+    jetBody.transform.localScale = new Vector3(1f, 1f, 1f);
     turnOffAllPowers();
     protectionBubble.SetActive(false);
     //(GetComponent("Halo") as Behaviour).enabled = false;
@@ -153,7 +155,7 @@ public class jetLogic : MonoBehaviour{
 
         Vector3 pos = (transform.rotation * getRandomPos()) + transform.position;
         cube[i].transform.position = pos;
-        //cube[i].transform.LookAt(carBody);
+        //cube[i].transform.LookAt(jetBody);
       }
       cube[i].transform.LookAt(camera);
 
@@ -235,7 +237,7 @@ public class jetLogic : MonoBehaviour{
   void startSuperSpeed(){
     superPower.text = "Mode: SuperSpeed";
     counter = 0f;
-    //carSpeed = 1.40f;
+    //jetSpeed = 1.40f;
 
     superSpeedPower = true;
   }
@@ -259,7 +261,7 @@ public class jetLogic : MonoBehaviour{
   void startHugePower(){
     superPower.text = "Mode: Huge";
     counter = 0f;
-    //carBody.transform.localScale = new Vector3(1.2f, 1.2f, 1.2f);
+    //jetBody.transform.localScale = new Vector3(1.2f, 1.2f, 1.2f);
     miniPower = false;
     maxiPower = true;
   }
@@ -275,27 +277,27 @@ public class jetLogic : MonoBehaviour{
     return randNum;
   }
 
-  void moveCar(){
+  void movejet(){
 
 
     Quaternion jetDir = getJetDir();
 
-    carBody.localRotation = Quaternion.Slerp(Quaternion.identity, jetDir, 0.3f);
+    jetBody.localRotation = Quaternion.Slerp(Quaternion.identity, jetDir, 0.3f);
     camera.localRotation = Quaternion.Slerp(Quaternion.identity, Quaternion.Inverse(transform.rotation), 0.05f);
 
 
-    //getCarVel();
+    //getjetVel();
 
 
     if(Input.GetKey(KeyCode.Space) || wheelGem.State == GemState.Connected){
 
-      transform.position = (carSpeed * ((transform.rotation * jetDir) * Vector3.forward)) + transform.position;
+      transform.position = (jetSpeed * ((transform.rotation * jetDir) * Vector3.forward)) + transform.position;
       transform.rotation =  Quaternion.Slerp(transform.rotation, transform.rotation * jetDir, 0.01f);
 
       //turn on for mouse controlled steering
       if (false){
         Vector3 mouseVector = new Vector3(Input.GetAxis("Mouse X"), 0f, .2f);
-        //transform.position = (carSpeed * mouseVector) + transform.position;
+        //transform.position = (jetSpeed * mouseVector) + transform.position;
       }
 
     }
@@ -304,7 +306,7 @@ public class jetLogic : MonoBehaviour{
 
 
   Quaternion getJetDir(){
-    //car mode
+    //jet mode
     //Quaternion q = Quaternion.LookRotation(Vector3.right, Vector3.up);
 
     //fly mode

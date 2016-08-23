@@ -10,7 +10,7 @@ public class jetLogic : MonoBehaviour{
   int highScore = 0;
   int currentScore = 0;
 
-  public float jetSpeed = 0.10f;
+  public float jetSpeed = 0.15f;
   Quaternion wheelRotation = Quaternion.identity;
 
   private bool safetyBubbleIsOn = false;
@@ -32,8 +32,7 @@ public class jetLogic : MonoBehaviour{
   private Quaternion inverseStartRotationWheel = Quaternion.identity;
 
 
-  //all shapes are in the cube array (cubes, cones, spheres....)
-  public GameObject[] cube;
+  public GameObject[] shape;
 
   // Use this for initialization
   void Start()
@@ -68,7 +67,7 @@ public class jetLogic : MonoBehaviour{
       //Show all the data
       printGemStatus();
 
-      spawnCubes();
+      spawnShapes();
       updateScore();
 
       wheelRotation = getWheelRotation();
@@ -131,7 +130,7 @@ public class jetLogic : MonoBehaviour{
     currentScore = 0;
     superPower.text = "Mode: Normal";
     counter = 0f;
-    jetSpeed = 0.10f;
+    jetSpeed = 0.15f;
     jetBody.transform.localScale = new Vector3(1f, 1f, 1f);
     turnOffAllPowers();
     protectionBubble.SetActive(false);
@@ -147,17 +146,20 @@ public class jetLogic : MonoBehaviour{
 
   void printGemStatus(){
     wheelStatus.text = "wheel: " + wheelGem.State;
+    if(wheelGem.State.ToString() == "Connected"){
+      wheelStatus.text = "";
+    }
   }
 
-  void spawnCubes(){
-    for (int i = 0; i < cube.Length; i++){
-      if(cube[i].GetComponent<Renderer>().isVisible == false){
+  void spawnShapes(){
+    for (int i = 0; i < shape.Length; i++){
+      if(shape[i].GetComponent<Renderer>().isVisible == false){
 
         Vector3 pos = (transform.rotation * getRandomPos()) + transform.position;
-        cube[i].transform.position = pos;
-        //cube[i].transform.LookAt(jetBody);
+        shape[i].transform.position = pos;
+        //shape[i].transform.LookAt(jetBody);
       }
-      cube[i].transform.LookAt(camera);
+      shape[i].transform.LookAt(camera);
 
     }
 
@@ -166,11 +168,12 @@ public class jetLogic : MonoBehaviour{
   void OnTriggerEnter(Collider other) {
     if(!safetyBubbleIsOn){
       if (other.tag == "cone"){
+        transform.position  = new Vector3(0, 0, 0);
         resetAll();
-        for (int i = 0; i < cube.Length; i++){
+        for (int i = 0; i < shape.Length; i++){
           Vector3 shapePos = (transform.rotation * getRandomPos()) + transform.position;
-          cube[i].transform.position = shapePos;
-          cube[i].transform.LookAt(camera);
+          shape[i].transform.position = shapePos;
+          shape[i].transform.LookAt(camera);
         }
       }
       else{
@@ -193,9 +196,8 @@ public class jetLogic : MonoBehaviour{
         startSuperSpeed();
       }
       else if(other.tag == "dodecahedron"){
-        //startSuperSpeed();
+        startSuperSpeed();
 
-        startMiniPower();
       }
       else if(other.tag == "sphere"){
         //startSuperSpeed();
@@ -235,9 +237,9 @@ public class jetLogic : MonoBehaviour{
   }
 
   void startSuperSpeed(){
-    superPower.text = "Mode: SuperSpeed";
+    superPower.text = "Mode: Super Speed";
     counter = 0f;
-    //jetSpeed = 1.40f;
+    jetSpeed = 0.35f;
 
     superSpeedPower = true;
   }

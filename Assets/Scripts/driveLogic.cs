@@ -57,7 +57,7 @@ public class driveLogic : MonoBehaviour {
 	void Start () {
 		GemManager.Instance.Connect();
 		steeringWheelGem = GemManager.Instance.GetGem("5C:F8:21:9C:FF:C4");
-		gasPedalGem =  GemManager.Instance.GetGem("D0:B5:C2:90:7E:65");
+		gasPedalGem =  GemManager.Instance.GetGem("D0:B5:C2:90:7A:C4");
 		breakPedalGem =  GemManager.Instance.GetGem("D0:B5:C2:90:7E:61");
 
 		thirdPersonCameraStartRotation = thirdPersonCameraModel.localRotation;
